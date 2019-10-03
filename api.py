@@ -9,10 +9,32 @@ app = Flask(__name__)
 def load_teams_data():
     td = pd.read_csv("./team_info.csv")
     return td
+def load_game_data():
+    td = pd.read_csv("./game.csv")
+    return td
+def load_player_info():
+    td = pd.read_csv("./player_info.csv")
+    return td
+def load_game_skater_stats():
+    td = pd.read_csv("./game_skater_stats.csv")
+    return td
+def load_game_teams_stats():
+    td = pd.read_csv("/game_teams_stats.csv")
+    return td
+
 
 #global variables
 team_data = load_teams_data()
 print("successfully loaded teams data")
+game_data = load_game_data()
+print("successfully loaded games data")
+player_info = load_player_info()
+print("successfully loaded player info data")
+game_skater_stats = load_game_skater_stats()
+print("successfully loaded game skater stats data")
+game_team_stats = load_game_teams_stats()
+print("successfully loaded game skater stats data")
+
 
 
 @app.route('/')
