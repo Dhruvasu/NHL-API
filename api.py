@@ -1,5 +1,6 @@
-from flask import Flask, jsonify, abort
+from flask import Flask, jsonify, abort, request
 import pandas as pd
+import numpy as np
 
 app = Flask(__name__)
 
@@ -63,14 +64,91 @@ def get_task(team_id):
     # jsonify easly converts maps to JSON strings
     return jsonify(teamJSON)
 @app.route('/api/results/<int:game_id>/teams', methods=['GET'])
-def get_game_results(game_id):
-    '''
-    which tables are needed? team_info and game_info
-    Need to take game_id and get the
+def get_game_result_details(game_id):
+
+    game = game_team_stats[game_team_stats["game_id"] == game_id]
+
+    team1 = game.iloc[0]
+    team2 = game.iloc[1]
+
+    team_1_full_name = (team_data[team_data["team_id"] == team1["team_id"]]).iloc[0]["teamName"]
+    team_2_full_name = (team_data[team_data["team_id"] == team2["team_id"]]).iloc[0]["teamName"]
 
 
-    '''
-    return
+    teamJSON = {
+                team_1_full_name: {
+                    "Goals": int(team1["goals"]),
+                    "Shots": int(team1["shots"]),
+                    "Hits": int(team1["hits"]),
+                    "PIM": int(team1["pim"]),
+                    "PowerPlay Opportunities": int(team1["powerPlayOpportunities"]),
+                    "PowerPlay Goals": int(team1["powerPlayGoals"]),
+                    "Faceoff Win %": float(team1["faceOffWinPercentage"]),
+                    "Giveaways": int(team1["giveaways"]),
+                    "takeaways": int(team1["takeaways"])
+                },
+                team_2_full_name: {
+                    "Goals": int(team2["goals"]),
+                    "Shots": int(team2["shots"]),
+                    "Hits": int(team2["hits"]),
+                    "PIM": int(team2["pim"]),
+                    "PowerPlay Opportunities": int(team2["powerPlayOpportunities"]),
+                    "PowerPlay Goals": int(team2["powerPlayGoals"]),
+                    "Faceoff Win %": float(team2["faceOffWinPercentage"]),
+                    "Giveaways": int(team2["giveaways"]),
+                    "takeaways": int(team2["takeaways"])
+
+                }
+                }
+
+    return jsonify(teamJSON)
+# =======
+#@app.route('/api/teams/<string:team_id>', methods=['GET'])
+#def get_task(team_id):
+#route mapping for HTTP GET on /api/results?date={YYYY-MM-DD}
+@app.route('/api/results', methods=['GET'])
+def get_result_details():
+    date_str = request.args.get('date')
+    dt = np.datetime64(date_str)
+    gameJSON = {}
+
+    games = game_data[game_data["home_team_id"] == 4]
+
+    if games.shape[0] < 1:
+        return dt
+
+    #game = games.iloc[0]
+
+    print(len(games.index))
+
+    i = 0
+
+    while i < len(games.index):
+        game = games.iloc[i]
+        gameJSON[int(game["game_id"])] = {
+                        "home_team": int(game["home_team_id"]),
+                        "away_team": int(game["away_team_id"]),
+                        "home_goals": int(game["home_goals"]),
+                        "away_goals": int(game["away_goals"]),
+                        "outcome": game["outcome"]
+                    }
+        i += 1
+
+    # gameJSON = {int(game["game_id"]):
+    #                 {
+    #                     "home_team": int(game["home_team_id"]),
+    #                     "away_team": int(game["away_team_id"]),
+    #                     "home_goals": int(game["home_goals"]),
+    #                     "away_goals": int(game["away_goals"]),
+    #                     "outcome": game["outcome"]
+    #                 },
+    # }
+
+    #gameJSON = {"game_id": int(game["game_id"])}
+
+    #dt = datetime.strptime(date_str, '%Y-%m-%d')
+
+    return jsonify(gameJSON)
 
 if __name__ == '__main__':
     app.run(debug=True)
