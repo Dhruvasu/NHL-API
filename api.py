@@ -19,7 +19,7 @@ def load_game_skater_stats():
     td = pd.read_csv("./game_skater_stats.csv")
     return td
 def load_game_teams_stats():
-    td = pd.read_csv("/game_teams_stats.csv")
+    td = pd.read_csv("./game_teams_stats.csv")
     return td
 
 
@@ -62,7 +62,15 @@ def get_task(team_id):
 
     # jsonify easly converts maps to JSON strings
     return jsonify(teamJSON)
+@app.route('/api/results/<int:game_id>/teams', methods=['GET'])
+def get_game_results(game_id):
+    '''
+    which tables are needed? team_info and game_info
+    Need to take game_id and get the
 
+
+    '''
+    return
 
 if __name__ == '__main__':
     app.run(debug=True)
