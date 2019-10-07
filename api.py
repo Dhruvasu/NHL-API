@@ -203,5 +203,11 @@ def get_result_details():
 
     return jsonify(gameJSON)
 
+#Enhancements
+@app.route('/api/results/<int:game_id>/scoringsummary', methods=['GET'])
+def get_scoring_summary(game_id):
+    
+
+
 if __name__ == '__main__':
     app.run(debug=True)
