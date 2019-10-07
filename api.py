@@ -68,24 +68,28 @@ def get_task(team_id):
 def get_results_summary():
     date_str = request.args.get('date')
     gameJSON = {}
-    
-    games = game_data[game_data["date_time"] == date_str]
- 
-    if games.shape[0] < 1:
-        return int(dt)
 
-    print(len(games.index))
+    games = game_data[game_data["date_time"] == date_str]
+
+    if games.shape[0] < 1:
+        abort(404)
+
 
     i = 0
 
     while i < len(games.index):
         game = games.iloc[i]
+
+        home_team_name = team_data[team_data["team_id"] == game["home_team_id"]].iloc[0]["teamName"]
+        away_team_name = team_data[team_data["team_id"] == game["away_team_id"]].iloc[0]["teamName"]
+        outcome = outcome_simplifier(game["outcome"])
+
         gameJSON[int(game["game_id"])] = {
-                        "home_team": int(game["home_team_id"]),
-                        "away_team": int(game["away_team_id"]),
+                        "home_team": home_team_name,
+                        "away_team": away_team_name,
                         "home_goals": int(game["home_goals"]),
                         "away_goals": int(game["away_goals"]),
-                        "outcome": game["outcome"]
+                        "outcome": outcome
                     }
         i += 1
 
@@ -182,13 +186,19 @@ def get_game_player_stats(game_id):
             playersJSON[team2_full_name][playerFirstName + playerLastName] = playerStats
 
     return jsonify(playersJSON)
+def outcome_simplifier(s: str):
+    if "REG" in s:
+        return "FINAL"
+    elif "OT" in s:
+        return "FINAL/OT"
 
+    return -1
 
-#Enhancements
-@app.route('/api/results/<int:game_id>/scoringsummary', methods=['GET'])
-def get_scoring_summary(game_id):
-    
-
+# #Enhancements
+# @app.route('/api/results/<int:game_id>/scoringsummary', methods=['GET'])
+# def get_scoring_summary(game_id):
+#
+#
 
 if __name__ == '__main__':
     app.run(debug=True)
