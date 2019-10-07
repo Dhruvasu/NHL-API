@@ -63,10 +63,13 @@ def get_task(team_id):
 
     # jsonify easly converts maps to JSON strings
     return jsonify(teamJSON)
+
 @app.route('/api/results/<int:game_id>/teams', methods=['GET'])
 def get_game_result_details(game_id):
 
     game = game_team_stats[game_team_stats["game_id"] == game_id]
+    if game.shape[0] < 1:
+        abort(404)
 
     team1 = game.iloc[0]
     team2 = game.iloc[1]
@@ -102,7 +105,57 @@ def get_game_result_details(game_id):
                 }
 
     return jsonify(teamJSON)
-# =======
+
+@app.route('/api/results/<int:game_id>/players', methods=['GET'])
+def get_game_player_stats(game_id):
+
+    game_players = game_skater_stats[game_skater_stats["game_id"] == game_id]
+
+    if game_players.shape[0] < 1:
+        abort(404)
+    team1_id = game_players.iloc[0]["team_id"]
+    team2_id = 0
+
+    for i in range(1, game_players.shape[0]):
+        if game_players.iloc[i]["team_id"] != team1_id:
+            team2_id = game_players.iloc[i]["team_id"]
+            break
+
+    team1_full_name = team_data[team_data["team_id"] == team1_id].iloc[0]["teamName"]
+    team2_full_name = team_data[team_data["team_id"] == team2_id].iloc[0]["teamName"]
+
+    playersJSON = {
+                team1_full_name: {
+                    },
+                team2_full_name: {
+                    }
+                }
+
+    for i in range(game_players.shape[0]):
+        playerFirstName = player_info[game_players.iloc[i]["player_id"] == player_info["player_id"]].iloc[0]["firstName"]
+        playerLastName = player_info[game_players.iloc[i]["player_id"] == player_info["player_id"]].iloc[0]["lastName"]
+        playerLastName = ' ' + playerLastName
+
+        playerStats = {
+                "G": int(game_players.iloc[i]["goals"]),
+                "A": int(game_players.iloc[i]["assists"]),
+                "S": int(game_players.iloc[i]["goals"]),
+                "H": int(game_players.iloc[i]["hits"]),
+                "PPP": int(game_players.iloc[i]["powerPlayGoals"] + game_players.iloc[i]["powerPlayAssists"]),
+                "PIM": int(game_players.iloc[i]["penaltyMinutes"]),
+                "TkA": int(game_players.iloc[i]["takeaways"]),
+                "GvA": int(game_players.iloc[i]["giveaways"]),
+                "BkS": int(game_players.iloc[i]["blocked"]),
+                "+/-": int(game_players.iloc[i]["plusMinus"]),
+        }
+
+        if game_players.iloc[i]["team_id"] == team1_id:
+            playersJSON[team1_full_name][playerFirstName + playerLastName] = playerStats
+        else:
+            playersJSON[team2_full_name][playerFirstName + playerLastName] = playerStats
+
+    return jsonify(playersJSON)
+
 #@app.route('/api/teams/<string:team_id>', methods=['GET'])
 #def get_task(team_id):
 #route mapping for HTTP GET on /api/results?date={YYYY-MM-DD}
