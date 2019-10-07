@@ -64,6 +64,97 @@ def get_task(team_id):
     # jsonify easly converts maps to JSON strings
     return jsonify(teamJSON)
 
+@app.route('/api/results/<int:game_id>/teams', methods=['GET'])
+def get_game_result_details(game_id):
+
+    game = game_team_stats[game_team_stats["game_id"] == game_id]
+    if game.shape[0] < 1:
+        abort(404)
+
+    team1 = game.iloc[0]
+    team2 = game.iloc[1]
+
+    team_1_full_name = (team_data[team_data["team_id"] == team1["team_id"]]).iloc[0]["teamName"]
+    team_2_full_name = (team_data[team_data["team_id"] == team2["team_id"]]).iloc[0]["teamName"]
+
+
+    teamJSON = {
+                team_1_full_name: {
+                    "Goals": int(team1["goals"]),
+                    "Shots": int(team1["shots"]),
+                    "Hits": int(team1["hits"]),
+                    "PIM": int(team1["pim"]),
+                    "PowerPlay Opportunities": int(team1["powerPlayOpportunities"]),
+                    "PowerPlay Goals": int(team1["powerPlayGoals"]),
+                    "Faceoff Win %": float(team1["faceOffWinPercentage"]),
+                    "Giveaways": int(team1["giveaways"]),
+                    "takeaways": int(team1["takeaways"])
+                },
+                team_2_full_name: {
+                    "Goals": int(team2["goals"]),
+                    "Shots": int(team2["shots"]),
+                    "Hits": int(team2["hits"]),
+                    "PIM": int(team2["pim"]),
+                    "PowerPlay Opportunities": int(team2["powerPlayOpportunities"]),
+                    "PowerPlay Goals": int(team2["powerPlayGoals"]),
+                    "Faceoff Win %": float(team2["faceOffWinPercentage"]),
+                    "Giveaways": int(team2["giveaways"]),
+                    "takeaways": int(team2["takeaways"])
+
+                }
+                }
+
+    return jsonify(teamJSON)
+
+@app.route('/api/results/<int:game_id>/players', methods=['GET'])
+def get_game_player_stats(game_id):
+
+    game_players = game_skater_stats[game_skater_stats["game_id"] == game_id]
+
+    if game_players.shape[0] < 1:
+        abort(404)
+    team1_id = game_players.iloc[0]["team_id"]
+    team2_id = 0
+
+    for i in range(1, game_players.shape[0]):
+        if game_players.iloc[i]["team_id"] != team1_id:
+            team2_id = game_players.iloc[i]["team_id"]
+            break
+
+    team1_full_name = team_data[team_data["team_id"] == team1_id].iloc[0]["teamName"]
+    team2_full_name = team_data[team_data["team_id"] == team2_id].iloc[0]["teamName"]
+
+    playersJSON = {
+                team1_full_name: {
+                    },
+                team2_full_name: {
+                    }
+                }
+
+    for i in range(game_players.shape[0]):
+        playerFirstName = player_info[game_players.iloc[i]["player_id"] == player_info["player_id"]].iloc[0]["firstName"]
+        playerLastName = player_info[game_players.iloc[i]["player_id"] == player_info["player_id"]].iloc[0]["lastName"]
+        playerLastName = ' ' + playerLastName
+
+        playerStats = {
+                "G": int(game_players.iloc[i]["goals"]),
+                "A": int(game_players.iloc[i]["assists"]),
+                "S": int(game_players.iloc[i]["goals"]),
+                "H": int(game_players.iloc[i]["hits"]),
+                "PPP": int(game_players.iloc[i]["powerPlayGoals"] + game_players.iloc[i]["powerPlayAssists"]),
+                "PIM": int(game_players.iloc[i]["penaltyMinutes"]),
+                "TkA": int(game_players.iloc[i]["takeaways"]),
+                "GvA": int(game_players.iloc[i]["giveaways"]),
+                "BkS": int(game_players.iloc[i]["blocked"]),
+                "+/-": int(game_players.iloc[i]["plusMinus"]),
+        }
+
+        if game_players.iloc[i]["team_id"] == team1_id:
+            playersJSON[team1_full_name][playerFirstName + playerLastName] = playerStats
+        else:
+            playersJSON[team2_full_name][playerFirstName + playerLastName] = playerStats
+
+    return jsonify(playersJSON)
 
 
 if __name__ == '__main__':
