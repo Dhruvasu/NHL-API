@@ -64,6 +64,33 @@ def get_task(team_id):
     # jsonify easly converts maps to JSON strings
     return jsonify(teamJSON)
 
+@app.route('/api/results', methods=['GET'])
+def get_results_summary():
+    date_str = request.args.get('date')
+    gameJSON = {}
+    
+    games = game_data[game_data["date_time"] == date_str]
+ 
+    if games.shape[0] < 1:
+        return int(dt)
+
+    print(len(games.index))
+
+    i = 0
+
+    while i < len(games.index):
+        game = games.iloc[i]
+        gameJSON[int(game["game_id"])] = {
+                        "home_team": int(game["home_team_id"]),
+                        "away_team": int(game["away_team_id"]),
+                        "home_goals": int(game["home_goals"]),
+                        "away_goals": int(game["away_goals"]),
+                        "outcome": game["outcome"]
+                    }
+        i += 1
+
+    return jsonify(gameJSON)
+
 @app.route('/api/results/<int:game_id>/teams', methods=['GET'])
 def get_game_result_details(game_id):
 
@@ -156,52 +183,6 @@ def get_game_player_stats(game_id):
 
     return jsonify(playersJSON)
 
-#@app.route('/api/teams/<string:team_id>', methods=['GET'])
-#def get_task(team_id):
-#route mapping for HTTP GET on /api/results?date={YYYY-MM-DD}
-@app.route('/api/results', methods=['GET'])
-def get_result_details():
-    date_str = request.args.get('date')
-    dt = np.datetime64(date_str)
-    gameJSON = {}
-
-    games = game_data[game_data["home_team_id"] == 4]
-
-    if games.shape[0] < 1:
-        return dt
-
-    #game = games.iloc[0]
-
-    print(len(games.index))
-
-    i = 0
-
-    while i < len(games.index):
-        game = games.iloc[i]
-        gameJSON[int(game["game_id"])] = {
-                        "home_team": int(game["home_team_id"]),
-                        "away_team": int(game["away_team_id"]),
-                        "home_goals": int(game["home_goals"]),
-                        "away_goals": int(game["away_goals"]),
-                        "outcome": game["outcome"]
-                    }
-        i += 1
-
-    # gameJSON = {int(game["game_id"]):
-    #                 {
-    #                     "home_team": int(game["home_team_id"]),
-    #                     "away_team": int(game["away_team_id"]),
-    #                     "home_goals": int(game["home_goals"]),
-    #                     "away_goals": int(game["away_goals"]),
-    #                     "outcome": game["outcome"]
-    #                 },
-    # }
-
-    #gameJSON = {"game_id": int(game["game_id"])}
-
-    #dt = datetime.strptime(date_str, '%Y-%m-%d')
-
-    return jsonify(gameJSON)
 
 #Enhancements
 @app.route('/api/results/<int:game_id>/scoringsummary', methods=['GET'])
