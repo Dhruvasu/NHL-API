@@ -96,12 +96,19 @@ def get_results_summary():
         away_team_name = team_data[team_data["team_id"] == game["away_team_id"]].iloc[0]["teamName"]
         outcome = outcome_simplifier(game["outcome"])
 
+        link1 = "/api/results/" + str(game["game_id"]) + "/teams"
+        link2 = "/api/results/" + str(game["game_id"]) + "/players"
+
         gameJSON[int(game["game_id"])] = {
                         "home_team": home_team_name,
                         "away_team": away_team_name,
                         "home_goals": int(game["home_goals"]),
                         "away_goals": int(game["away_goals"]),
-                        "outcome": outcome
+                        "outcome": outcome,
+                        "link": {
+                        	"game result details": link1,
+                        	"game player stats": link2
+                        }
                     }
         i += 1
 
@@ -120,6 +127,7 @@ def get_game_result_details(game_id):
     team_1_full_name = (team_data[team_data["team_id"] == team1["team_id"]]).iloc[0]["teamName"]
     team_2_full_name = (team_data[team_data["team_id"] == team2["team_id"]]).iloc[0]["teamName"]
 
+    link = "/api/results/" + str(game_id) + "/players"
 
     teamJSON = {
                 team_1_full_name: {
@@ -143,9 +151,11 @@ def get_game_result_details(game_id):
                     "Faceoff Win %": float(team2["faceOffWinPercentage"]),
                     "Giveaways": int(team2["giveaways"]),
                     "takeaways": int(team2["takeaways"])
-
-                }
-                }
+                },
+        		"link": {
+        			"game player stats": link
+        		}
+        	}
 
     return jsonify(teamJSON)
 
@@ -179,6 +189,8 @@ def get_game_player_stats(game_id):
         playerLastName = player_info[game_players.iloc[i]["player_id"] == player_info["player_id"]].iloc[0]["lastName"]
         playerLastName = ' ' + playerLastName
 
+        link = "/api/v1/people/" + str(game_players.iloc[i]["player_id"])
+
         playerStats = {
                 "G": int(game_players.iloc[i]["goals"]),
                 "A": int(game_players.iloc[i]["assists"]),
@@ -190,6 +202,9 @@ def get_game_player_stats(game_id):
                 "GvA": int(game_players.iloc[i]["giveaways"]),
                 "BkS": int(game_players.iloc[i]["blocked"]),
                 "+/-": int(game_players.iloc[i]["plusMinus"]),
+                "link": {
+                	"player info": link
+                }
         }
 
         if game_players.iloc[i]["team_id"] == team1_id:
@@ -250,6 +265,13 @@ def get_scoring_summary(game_id):
 				playsJSON[period_dict[period]][period_time]["Away Team Score"] = int(plays.iloc[i]["goals_away"])
 				playsJSON[period_dict[period]][period_time]["Home Team Score"] = int(plays.iloc[i]["goals_home"])
 
+				playsJSON[period_dict[period]][period_time]["Scorer Link"] = goal_info["Scorer link"]
+
+				if playsJSON[period_dict[period]][period_time]["Assist 1"] != "Unassisted":
+					playsJSON[period_dict[period]][period_time]["Assist 1 Link"] = goal_info["Assist 1 link"]
+				if playsJSON[period_dict[period]][period_time]["Assist 2"] != " ":
+					playsJSON[period_dict[period]][period_time]["Assist 2 Link"] = goal_info["Assist 2 link"]
+					
 			elif int(plays.iloc[i]["period"]) != period:
 				period += 1
 
@@ -274,18 +296,22 @@ def find_goal_info(play_id: int):
 	goal_info_dict = {"Scorer": "", "Assist 1": "Unassisted", "Assist 2": ""}
 
 	for i in range(goal_info.shape[0]):
+		link = "/players/" + str(goal_info.iloc[i]["player_id"])
 		if goal_info.iloc[i]["playerType"] == "Scorer":
 			playerFirstName = player_info[goal_info.iloc[i]["player_id"] == player_info["player_id"]].iloc[0]["firstName"]
 			playerLastName = player_info[goal_info.iloc[i]["player_id"] == player_info["player_id"]].iloc[0]["lastName"]
 			goal_info_dict["Scorer"] = playerFirstName + " " + playerLastName
+			goal_info_dict["Scorer link"] = link
 		elif goal_info.iloc[i]["playerType"] == "Assist":
 			playerFirstName = player_info[goal_info.iloc[i]["player_id"] == player_info["player_id"]].iloc[0]["firstName"]
 			playerLastName = player_info[goal_info.iloc[i]["player_id"] == player_info["player_id"]].iloc[0]["lastName"]
 			if (assists == 0):
 				goal_info_dict["Assist 1"] = playerFirstName + " " + playerLastName
+				goal_info_dict["Assist 1 link"] = link
 				assists += 1
 			else:
 				goal_info_dict["Assist 2"] = playerFirstName + " " + playerLastName
+				goal_info_dict["Assist 2 link"] = link
 
 	# print(goal_info_dict)
 	return goal_info_dict
