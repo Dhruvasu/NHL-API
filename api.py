@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, abort, request
 import pandas as pd
 import numpy as np
+import time
 
 app = Flask(__name__)
 
@@ -22,6 +23,12 @@ def load_game_skater_stats():
 def load_game_teams_stats():
     td = pd.read_csv("./game_teams_stats.csv")
     return td
+def load_game_plays():
+	td = pd.read_csv("./game_plays.csv")
+	return td
+def load_game_plays_players():
+	td = pd.read_csv("./game_plays_players.csv")
+	return td
 
 
 #global variables
@@ -34,7 +41,12 @@ print("successfully loaded player info data")
 game_skater_stats = load_game_skater_stats()
 print("successfully loaded game skater stats data")
 game_team_stats = load_game_teams_stats()
-print("successfully loaded game skater stats data")
+print("successfully loaded game team stats data")
+
+game_plays_data = load_game_plays()
+print("successfully loaded game plays data")
+game_plays_players_data = load_game_plays_players()
+print("successfully loaded game plays players data")
 
 
 
@@ -186,6 +198,98 @@ def get_game_player_stats(game_id):
             playersJSON[team2_full_name][playerFirstName + playerLastName] = playerStats
 
     return jsonify(playersJSON)
+
+# #Enhancements
+@app.route('/api/results/<int:game_id>/scoringsummary', methods=['GET'])
+def get_scoring_summary(game_id):
+	sorted_plays = game_plays_data.sort_values(by=['period', 'periodTime'])
+	plays = sorted_plays[game_plays_data["game_id"] == game_id]
+	game = game_data[game_data["game_id"] == game_id]
+	playsJSON = {}
+	period_dict = {1: "1st Period", 2: "2nd Period", 3: "3rd Period", 4: "4th Period"}
+
+	if plays.shape[0] < 1:
+		abort(404)
+
+	periods_in_game = plays.iloc[plays.shape[0] - 1]['period']
+	# print(per)
+
+	period = 1
+
+	while period <= periods_in_game:
+		playsJSON[period_dict[period]] = {}
+		period += 1
+
+	period = 1
+
+	while period <= periods_in_game:
+		for i in range(plays.shape[0]):
+			if int(plays.iloc[i]["period"]) == period and plays.iloc[i]["event"] == "Goal":
+				goal_info = find_goal_info(plays.iloc[i]["play_id"])
+				period_time = time.strftime('%M:%S', time.gmtime(int(plays.iloc[i]["periodTime"])))
+
+				desc_list = plays.iloc[i]["description"].split()
+				record = player_record(desc_list)
+
+				playsJSON[period_dict[period]][period_time] = {}
+				playsJSON[period_dict[period]][period_time]["Scorer"] = goal_info["Scorer"]
+				playsJSON[period_dict[period]][period_time]["Assist 1"] = goal_info["Assist 1"]
+				playsJSON[period_dict[period]][period_time]["Assist 2"] = goal_info["Assist 2"]
+
+				playsJSON[period_dict[period]][period_time]["Scorer"] += " " + record[0]
+				playsJSON[period_dict[period]][period_time]["Assist 1"] += " " + record[1]
+				playsJSON[period_dict[period]][period_time]["Assist 2"] += " " + record[2]
+
+				if (plays.iloc[i]["team_id_for"] == game.iloc[0]["home_team_id"]):
+					playsJSON[period_dict[period]][period_time]["Home Team"] = team_data[team_data["team_id"] == plays.iloc[i]["team_id_for"]].iloc[0]["abbreviation"]
+					playsJSON[period_dict[period]][period_time]["Away Team"] = team_data[team_data["team_id"] == plays.iloc[i]["team_id_against"]].iloc[0]["abbreviation"]
+				else:
+					playsJSON[period_dict[period]][period_time]["Away Team"] = team_data[team_data["team_id"] == plays.iloc[i]["team_id_for"]].iloc[0]["abbreviation"]
+					playsJSON[period_dict[period]][period_time]["Home Team"] = team_data[team_data["team_id"] == plays.iloc[i]["team_id_against"]].iloc[0]["abbreviation"]
+
+				playsJSON[period_dict[period]][period_time]["Away Team Score"] = int(plays.iloc[i]["goals_away"])
+				playsJSON[period_dict[period]][period_time]["Home Team Score"] = int(plays.iloc[i]["goals_home"])
+
+			elif int(plays.iloc[i]["period"]) != period:
+				period += 1
+
+	return jsonify(playsJSON)
+
+def player_record(desc_list):
+	ret_list = []
+
+	for i in desc_list:
+		if i[0] == '(':
+			ret_list.append(i[0:3])
+	if len(ret_list) == 2:
+		ret_list.append("")
+	elif len(ret_list) == 1:
+		ret_list.append("")
+		ret_list.append("")
+	return ret_list
+
+def find_goal_info(play_id: int):
+	goal_info = game_plays_players_data[game_plays_players_data["play_id"] == play_id]
+	assists = 0
+	goal_info_dict = {"Scorer": "", "Assist 1": "Unassisted", "Assist 2": ""}
+
+	for i in range(goal_info.shape[0]):
+		if goal_info.iloc[i]["playerType"] == "Scorer":
+			playerFirstName = player_info[goal_info.iloc[i]["player_id"] == player_info["player_id"]].iloc[0]["firstName"]
+			playerLastName = player_info[goal_info.iloc[i]["player_id"] == player_info["player_id"]].iloc[0]["lastName"]
+			goal_info_dict["Scorer"] = playerFirstName + " " + playerLastName
+		elif goal_info.iloc[i]["playerType"] == "Assist":
+			playerFirstName = player_info[goal_info.iloc[i]["player_id"] == player_info["player_id"]].iloc[0]["firstName"]
+			playerLastName = player_info[goal_info.iloc[i]["player_id"] == player_info["player_id"]].iloc[0]["lastName"]
+			if (assists == 0):
+				goal_info_dict["Assist 1"] = playerFirstName + " " + playerLastName
+				assists += 1
+			else:
+				goal_info_dict["Assist 2"] = playerFirstName + " " + playerLastName
+
+	# print(goal_info_dict)
+	return goal_info_dict
+
 def outcome_simplifier(s: str):
     if "REG" in s:
         return "FINAL"
@@ -193,12 +297,6 @@ def outcome_simplifier(s: str):
         return "FINAL/OT"
 
     return -1
-
-# #Enhancements
-# @app.route('/api/results/<int:game_id>/scoringsummary', methods=['GET'])
-# def get_scoring_summary(game_id):
-#
-#
 
 if __name__ == '__main__':
     app.run(debug=True)
