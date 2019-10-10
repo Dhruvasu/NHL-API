@@ -114,7 +114,7 @@ def get_results_summary():
 
     return jsonify(gameJSON)
 
-@app.route('/api/results/<int:game_id>/teams', methods=['GET'])
+@app.route('/api/results/<int:game_id>/team_id_against', methods=['GET'])
 def get_game_result_details(game_id):
 
     game = game_team_stats[game_team_stats["game_id"] == game_id]
@@ -194,7 +194,7 @@ def get_game_player_stats(game_id):
         playerStats = {
                 "G": int(game_players.iloc[i]["goals"]),
                 "A": int(game_players.iloc[i]["assists"]),
-                "S": int(game_players.iloc[i]["goals"]),
+                "S": int(game_players.iloc[i]["shots"]),
                 "H": int(game_players.iloc[i]["hits"]),
                 "PPP": int(game_players.iloc[i]["powerPlayGoals"] + game_players.iloc[i]["powerPlayAssists"]),
                 "PIM": int(game_players.iloc[i]["penaltyMinutes"]),
@@ -271,7 +271,7 @@ def get_scoring_summary(game_id):
 					playsJSON[period_dict[period]][period_time]["Assist 1 Link"] = goal_info["Assist 1 link"]
 				if playsJSON[period_dict[period]][period_time]["Assist 2"] != " ":
 					playsJSON[period_dict[period]][period_time]["Assist 2 Link"] = goal_info["Assist 2 link"]
-					
+
 			elif int(plays.iloc[i]["period"]) != period:
 				period += 1
 
