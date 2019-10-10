@@ -114,7 +114,7 @@ def get_results_summary():
 
     return jsonify(gameJSON)
 
-@app.route('/api/results/<int:game_id>/team_id_against', methods=['GET'])
+@app.route('/api/results/<int:game_id>/teams', methods=['GET'])
 def get_game_result_details(game_id):
 
     game = game_team_stats[game_team_stats["game_id"] == game_id]
