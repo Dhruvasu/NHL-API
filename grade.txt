@@ -1,0 +1,2 @@
+Team name	User stories and acc / 10	Resource desc / 10	Code - r1 / 20	Code - r2 / 20	Code - r3 / 20	readme / 5	Enhance / 15	Total / 100
+ez clap	10	6	16	18	17	5	11	83	No JSON description, weak field descriptions	Noninformative keys	Multiple info per value, not chronological			
