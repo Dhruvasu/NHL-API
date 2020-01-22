@@ -1,4 +1,4 @@
-# Assignment1
+# NHL API
 
 ## Game Results Summary
 
